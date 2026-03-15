@@ -1,145 +1,94 @@
-// script.js – Calculator core logic with keyboard support
+// Calculator state
+let expression = '';
+const display = document.getElementById('display');
 
-(() => {
-  const display = document.getElementById('display');
-  const buttons = document.querySelectorAll('.btn');
-  let expression = '';
-  let lastResult = null;
+// Helper to update the display
+function updateDisplay(value) {
+    display.textContent = value;
+}
 
-  const updateDisplay = (value) => {
-    display.value = value;
-  };
-
-  const clearAll = () => {
+// Clear all
+function clearAll() {
     expression = '';
-    lastResult = null;
-    updateDisplay('');
-  };
+    updateDisplay('0');
+}
 
-  const backspace = () => {
-    if (expression.length > 0) {
-      expression = expression.slice(0, -1);
-      updateDisplay(expression);
-    }
-  };
+// Delete last character
+function deleteLast() {
+    expression = expression.slice(0, -1);
+    updateDisplay(expression || '0');
+}
 
-  const append = (char) => {
-    // Prevent multiple operators in a row
-    const operators = ['+', '-', '*', '/'];
-    const lastChar = expression.slice(-1);
-    if (operators.includes(char) && operators.includes(lastChar)) {
-      // Replace the last operator with the new one
-      expression = expression.slice(0, -1) + char;
-    } else {
-      expression += char;
-    }
-    updateDisplay(expression);
-  };
-
-  const evaluate = () => {
+// Evaluate the expression safely
+function evaluateExpression() {
     if (!expression) return;
     try {
-      // Replace division symbol if user typed '÷'
-      const sanitized = expression.replace(/÷/g, '/');
-      // Detect division by zero before eval
-      if (/\/0(?!\d)/.test(sanitized)) {
-        throw new Error('Division by zero');
-      }
-      // Use Function constructor instead of eval for a tiny sandbox
-      // eslint-disable-next-line no-new-func
-      const result = Function(`'use strict'; return (${sanitized})`)();
-      if (!isFinite(result)) {
-        throw new Error('Math error');
-      }
-      updateDisplay(result);
-      expression = String(result);
-      lastResult = result;
+        // Replace unicode division/multiplication symbols with JS operators
+        const sanitized = expression.replace(/÷/g, '/').replace(/×/g, '*');
+        // Simple check for division by zero
+        if (/\/0(?!\.)/.test(sanitized)) {
+            throw new Error('Division by zero');
+        }
+        // Use Function constructor for safe evaluation (no eval)
+        const result = Function(`'use strict'; return (${sanitized})`)();
+        updateDisplay(result);
+        expression = result.toString();
     } catch (e) {
-      updateDisplay('Error');
-      expression = '';
-      lastResult = null;
+        updateDisplay('Error: Division by zero');
+        expression = '';
     }
-  };
+}
 
-  // Click handling
-  buttons.forEach((btn) => {
+// Append a character (number/operator) to the expression
+function appendToExpression(char) {
+    // Prevent multiple operators in a row
+    const operators = '+-*/';
+    const lastChar = expression.slice(-1);
+    if (operators.includes(char) && operators.includes(lastChar)) {
+        // Replace the last operator with the new one
+        expression = expression.slice(0, -1) + char;
+    } else {
+        expression += char;
+    }
+    updateDisplay(expression);
+}
+
+// Button click handling
+document.querySelectorAll('.btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const key = btn.getAttribute('data-key');
-      handleInput(key);
+        const value = btn.getAttribute('data-value');
+        const action = btn.getAttribute('data-action');
+        if (action === 'clear') {
+            clearAll();
+        } else if (action === 'delete') {
+            deleteLast();
+        } else if (action === 'equals') {
+            evaluateExpression();
+        } else if (value) {
+            // Map display symbols to actual operators
+            const map = { '÷': '/', '×': '*', '−': '-', '+': '+' };
+            const char = map[value] || value;
+            appendToExpression(char);
+        }
     });
-  });
+});
 
-  // Keyboard handling
-  const keyMap = {
-    'Enter': 'Enter',
-    '=': 'Enter',
-    'Escape': 'Escape',
-    'c': 'Escape',
-    'C': 'Escape',
-    'Backspace': 'Backspace',
-    'Delete': 'Backspace',
-    '+': '+',
-    '-': '-',
-    '*': '*',
-    'x': '*',
-    'X': '*',
-    '/': '/',
-    '÷': '/',
-    '.': '.',
-    ',': '.',
-    '0': '0',
-    '1': '1',
-    '2': '2',
-    '3': '3',
-    '4': '4',
-    '5': '5',
-    '6': '6',
-    '7': '7',
-    '8': '8',
-    '9': '9'
-  };
-
-  const handleInput = (key) => {
-    switch (key) {
-      case 'Escape':
+// Keyboard support
+document.addEventListener('keydown', e => {
+    const key = e.key;
+    if (/[0-9]/.test(key)) {
+        appendToExpression(key);
+    } else if (['+', '-', '*', '/', '.'].includes(key)) {
+        appendToExpression(key);
+    } else if (key === 'Enter' || key === '=') {
+        e.preventDefault();
+        evaluateExpression();
+    } else if (key === 'Backspace') {
+        deleteLast();
+    } else if (key === 'Escape') {
         clearAll();
-        break;
-      case 'Backspace':
-        backspace();
-        break;
-      case 'Enter':
-        evaluate();
-        break;
-      case '+':
-      case '-':
-      case '*':
-      case '/':
-        append(key);
-        break;
-      case '.':
-        // Prevent multiple decimals in the current number segment
-        const parts = expression.split(/[+\-*/]/);
-        if (!parts[parts.length - 1].includes('.')) {
-          append('.');
-        }
-        break;
-      default:
-        // Digits
-        if (/^[0-9]$/.test(key)) {
-          append(key);
-        }
-        break;
     }
-  };
+});
 
-  document.addEventListener('keydown', (e) => {
-    const mapped = keyMap[e.key];
-    if (mapped) {
-      e.preventDefault();
-      handleInput(mapped);
-    }
-  });
-
-  // Initialize display
-  clearAll();
-})();
+// Initialize display
+clearAll();
