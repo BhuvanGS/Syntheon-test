@@ -8,7 +8,14 @@
 </head>
 <body>
     <div class="calculator">
-        <input type="text" id="display" class="display" readonly placeholder="0" />
+        <!-- Top controls -->
+        <div class="top-controls">
+            <button class="btn mode-toggle" data-key="ModeToggle">Scientific Mode</button>
+            <button class="btn dark-toggle" data-key="DarkToggle">🌙</button>
+        </div>
+        <!-- Multi‑line display -->
+        <textarea id="display" class="display" readonly rows="2" placeholder="0"></textarea>
+        <!-- Buttons container -->
         <div class="buttons">
             <!-- Row 1 -->
             <button class="btn" data-key="7">7</button>
@@ -33,6 +40,30 @@
             <!-- Row 5 -->
             <button class="btn clear" data-key="Escape">C</button>
         </div>
+        <!-- Scientific buttons (hidden by default) -->
+        <div class="scientific-buttons hidden">
+            <button class="btn" data-key="sin">sin</button>
+            <button class="btn" data-key="cos">cos</button>
+            <button class="btn" data-key="tan">tan</button>
+            <button class="btn" data-key="log">log</button>
+            <button class="btn" data-key="ln">ln</button>
+            <button class="btn" data-key="sqrt">√</button>
+        </div>
+        <!-- History panel -->
+        <div class="history-panel">
+            <h3>History</h3>
+            <ul id="history-list"></ul>
+        </div>
+    </div>
+    <!-- Keyboard shortcuts tooltip -->
+    <div class="tooltip" id="shortcut-tooltip">
+        <strong>Keyboard Shortcuts</strong><br/>
+        0‑9, . : numbers & decimal<br/>
+        + - * / : operators<br/>
+        Enter : evaluate<br/>
+        Escape : clear<br/>
+        S : sin, C : cos, T : tan, L : log, N : ln, R : √<br/>
+        M : toggle scientific mode, D : toggle dark mode
     </div>
     <script src="app.js"></script>
 </body>

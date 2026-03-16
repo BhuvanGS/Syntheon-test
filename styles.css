@@ -9,9 +9,16 @@
 body {
     display: flex;
     justify-content: center;
-    align-items: center;
-    height: 100vh;
+    align-items: flex-start;
+    min-height: 100vh;
     background: #f0f2f5;
+    padding-top: 30px;
+    transition: background 0.3s, color 0.3s;
+}
+
+body.dark {
+    background: #1e1e1e;
+    color: #e0e0e0;
 }
 
 .calculator {
@@ -19,7 +26,13 @@ body {
     padding: 20px;
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    width: 320px;
+    width: 340px;
+    position: relative;
+    transition: background 0.3s;
+}
+
+body.dark .calculator {
+    background: #2c2c2c;
 }
 
 .display {
@@ -32,12 +45,31 @@ body {
     border: 2px solid #ddd;
     border-radius: 8px;
     background: #fafafa;
+    resize: none;
+    overflow: hidden;
 }
 
-.buttons {
+body.dark .display {
+    background: #3a3a3a;
+    border-color: #555;
+    color: #e0e0e0;
+}
+
+.top-controls {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.buttons, .scientific-buttons {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 10px;
+    margin-bottom: 10px;
+}
+
+.scientific-buttons.hidden {
+    display: none;
 }
 
 .btn {
@@ -81,4 +113,74 @@ body {
 
 .clear:hover {
     background: #e02e24;
+}
+
+.history-panel {
+    position: absolute;
+    top: 20px;
+    right: -260px;
+    width: 240px;
+    max-height: 400px;
+    overflow-y: auto;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: right 0.3s;
+}
+
+body.dark .history-panel {
+    background: #3a3a3a;
+    border-color: #555;
+    color: #e0e0e0;
+}
+
+.calculator:hover .history-panel {
+    right: -20px;
+}
+
+.history-panel h3 {
+    margin: 0 0 5px 0;
+    font-size: 1rem;
+    text-align: center;
+}
+
+#history-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+#history-list li {
+    padding: 4px 6px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+#history-list li:hover {
+    background: #e0e0e0;
+}
+
+body.dark #history-list li:hover {
+    background: #555;
+}
+
+.tooltip {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0,0,0,0.75);
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    max-width: 250px;
+    display: none;
+}
+
+.calculator:hover + .tooltip {
+    display: block;
 }
