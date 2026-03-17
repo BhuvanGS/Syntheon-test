@@ -1,11 +1,19 @@
 // Calculator state
 let display = document.getElementById('display');
+let prevDisplay = document.getElementById('prev');
+let currentDisplay = document.getElementById('current');
 let currentInput = '';
 let previousValue = null;
 let operator = null;
+let history = [];
+
+// Preference keys
+const THEME_KEY = 'calcTheme';
+const SCI_MODE_KEY = 'calcScientificMode';
 
 function updateDisplay() {
-    display.textContent = currentInput || '0';
+    currentDisplay.textContent = currentInput || '0';
+    prevDisplay.textContent = operator && previousValue !== null ? `${previousValue} ${operator}` : '';
 }
 
 function clearAll() {
@@ -38,6 +46,7 @@ function chooseOperator(op) {
     }
     operator = op;
     currentInput = '';
+    updateDisplay();
 }
 
 function compute() {
@@ -57,22 +66,152 @@ function compute() {
         case '/':
             if (current === 0) {
                 display.textContent = 'Error';
-                // Reset after short delay
                 setTimeout(clearAll, 1500);
                 return;
             }
             result = previousValue / current;
             break;
+        case '^':
+            result = Math.pow(previousValue, current);
+            break;
         default:
             return;
     }
+    const expression = `${previousValue} ${operator} ${current} = ${result}`;
+    addToHistory(expression);
     currentInput = result.toString();
     previousValue = null;
     operator = null;
     updateDisplay();
 }
 
+function applyPercentage() {
+    if (currentInput === '') return;
+    const value = parseFloat(currentInput) / 100;
+    currentInput = value.toString();
+    updateDisplay();
+}
+
+function applyScientific(action) {
+    if (currentInput === '') return;
+    const val = parseFloat(currentInput);
+    let result;
+    switch (action) {
+        case 'sin':
+            result = Math.sin(toRadians(val));
+            break;
+        case 'cos':
+            result = Math.cos(toRadians(val));
+            break;
+        case 'tan':
+            result = Math.tan(toRadians(val));
+            break;
+        case 'log':
+            result = Math.log10(val);
+            break;
+        case 'sqrt':
+            result = Math.sqrt(val);
+            break;
+        default:
+            return;
+    }
+    const expression = `${action}(${val}) = ${result}`;
+    addToHistory(expression);
+    currentInput = result.toString();
+    updateDisplay();
+}
+
+function toRadians(deg) {
+    return deg * (Math.PI / 180);
+}
+
+// History handling
+function addToHistory(entry) {
+    history.unshift(entry);
+    if (history.length > 20) history.pop();
+    renderHistory();
+}
+
+function renderHistory() {
+    const list = document.getElementById('history-list');
+    list.innerHTML = '';
+    history.forEach((item, idx) => {
+        const li = document.createElement('li');
+        li.textContent = item;
+        li.dataset.idx = idx;
+        li.addEventListener('click', () => restoreFromHistory(item));
+        list.appendChild(li);
+    });
+}
+
+function restoreFromHistory(entry) {
+    // Expected format: "a op b = result" or "func(a) = result"
+    const expr = entry.split('=')[0].trim();
+    // Simple restore: place the left side into currentInput for editing
+    currentInput = expr;
+    previousValue = null;
+    operator = null;
+    updateDisplay();
+}
+
+// Theme handling
+function loadTheme() {
+    const saved = localStorage.getItem(THEME_KEY) || 'light';
+    if (saved === 'dark') {
+        document.body.classList.add('dark');
+        themeToggle.textContent = '☀️';
+    } else {
+        document.body.classList.remove('dark');
+        themeToggle.textContent = '🌙';
+    }
+}
+
+function toggleTheme() {
+    if (document.body.classList.contains('dark')) {
+        document.body.classList.remove('dark');
+        localStorage.setItem(THEME_KEY, 'light');
+        themeToggle.textContent = '🌙';
+    } else {
+        document.body.classList.add('dark');
+        localStorage.setItem(THEME_KEY, 'dark');
+        themeToggle.textContent = '☀️';
+    }
+}
+
+// Scientific mode handling
+function loadScientificMode() {
+    const saved = localStorage.getItem(SCI_MODE_KEY) === 'true';
+    const sciContainer = document.querySelector('.scientific-buttons');
+    if (saved) {
+        sciContainer.classList.remove('hidden');
+        sciToggle.textContent = '🔬✖';
+    } else {
+        sciContainer.classList.add('hidden');
+        sciToggle.textContent = '🔬';
+    }
+}
+
+function toggleScientificMode() {
+    const sciContainer = document.querySelector('.scientific-buttons');
+    const isHidden = sciContainer.classList.contains('hidden');
+    if (isHidden) {
+        sciContainer.classList.remove('hidden');
+        localStorage.setItem(SCI_MODE_KEY, 'true');
+        sciToggle.textContent = '🔬✖';
+    } else {
+        sciContainer.classList.add('hidden');
+        localStorage.setItem(SCI_MODE_KEY, 'false');
+        sciToggle.textContent = '🔬';
+    }
+}
+
 // Button event listeners
+const themeToggle = document.getElementById('theme-toggle');
+const sciToggle = document.getElementById('scientific-toggle');
+
+themeToggle.addEventListener('click', toggleTheme);
+sciToggle.addEventListener('click', toggleScientificMode);
+
 document.querySelectorAll('.btn').forEach(btn => {
     btn.addEventListener('click', () => {
         const number = btn.dataset.number;
@@ -102,6 +241,19 @@ document.querySelectorAll('.btn').forEach(btn => {
                 case 'equals':
                     compute();
                     break;
+                case 'percentage':
+                    applyPercentage();
+                    break;
+                case 'sin':
+                case 'cos':
+                case 'tan':
+                case 'log':
+                case 'sqrt':
+                    applyScientific(action);
+                    break;
+                case 'power':
+                    chooseOperator('^');
+                    break;
             }
         }
     });
@@ -121,8 +273,12 @@ document.addEventListener('keydown', e => {
         chooseOperator('*');
     } else if (key === '/' || key === '÷') {
         chooseOperator('/');
+    } else if (key === '^') {
+        chooseOperator('^');
     } else if (key === 'Enter' || key === '=') {
         compute();
+    } else if (key === '%') {
+        applyPercentage();
     } else if (key === 'Backspace') {
         deleteLast();
     } else if (key === 'Escape') {
@@ -130,5 +286,7 @@ document.addEventListener('keydown', e => {
     }
 });
 
-// Initialize display
+// Initialize
+loadTheme();
+loadScientificMode();
 updateDisplay();
