@@ -11,6 +11,7 @@ let errorState = false; // <-- new error flag
 // Preference keys
 const THEME_KEY = 'calcTheme';
 const SCI_MODE_KEY = 'calcScientificMode';
+const HISTORY_KEY = 'calcHistory'; // new key for persisting history
 
 function updateDisplay() {
     currentDisplay.textContent = currentInput || '0';
@@ -146,6 +147,7 @@ function toRadians(deg) {
 function addToHistory(entry) {
     history.unshift(entry);
     if (history.length > 20) history.pop();
+    saveHistory();
     renderHistory();
 }
 
@@ -170,6 +172,28 @@ function restoreFromHistory(entry) {
     operator = null;
     errorState = false; // clear any previous error
     updateDisplay();
+}
+
+function saveHistory() {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+}
+
+function loadHistory() {
+    const stored = localStorage.getItem(HISTORY_KEY);
+    if (stored) {
+        try {
+            history = JSON.parse(stored);
+        } catch (e) {
+            history = [];
+        }
+    }
+    renderHistory();
+}
+
+function clearHistory() {
+    history = [];
+    localStorage.removeItem(HISTORY_KEY);
+    renderHistory();
 }
 
 // Theme handling
@@ -226,9 +250,11 @@ function toggleScientificMode() {
 // Button event listeners
 const themeToggle = document.getElementById('theme-toggle');
 const sciToggle = document.getElementById('scientific-toggle');
+const clearHistoryBtn = document.getElementById('clear-history');
 
 themeToggle.addEventListener('click', toggleTheme);
 sciToggle.addEventListener('click', toggleScientificMode);
+clearHistoryBtn.addEventListener('click', clearHistory);
 
 document.querySelectorAll('.btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -307,4 +333,5 @@ document.addEventListener('keydown', e => {
 // Initialize
 loadTheme();
 loadScientificMode();
+loadHistory();
 updateDisplay();
