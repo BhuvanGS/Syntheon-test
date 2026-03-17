@@ -6,6 +6,7 @@ let currentInput = '';
 let previousValue = null;
 let operator = null;
 let history = [];
+let errorState = false; // <-- new error flag
 
 // Preference keys
 const THEME_KEY = 'calcTheme';
@@ -14,21 +15,30 @@ const SCI_MODE_KEY = 'calcScientificMode';
 function updateDisplay() {
     currentDisplay.textContent = currentInput || '0';
     prevDisplay.textContent = operator && previousValue !== null ? `${previousValue} ${operator}` : '';
+    // Apply error styling
+    if (errorState) {
+        display.classList.add('error');
+    } else {
+        display.classList.remove('error');
+    }
 }
 
 function clearAll() {
     currentInput = '';
     previousValue = null;
     operator = null;
+    errorState = false; // reset error flag
     updateDisplay();
 }
 
 function deleteLast() {
+    if (errorState) return; // block during error
     currentInput = currentInput.slice(0, -1);
     updateDisplay();
 }
 
 function appendNumber(num) {
+    if (errorState) return; // block during error
     // Prevent multiple leading zeros
     if (num === '0' && currentInput === '0') return;
     // Prevent multiple decimals
@@ -38,6 +48,7 @@ function appendNumber(num) {
 }
 
 function chooseOperator(op) {
+    if (errorState) return; // block during error
     if (currentInput === '' && previousValue === null) return;
     if (previousValue === null) {
         previousValue = parseFloat(currentInput);
@@ -65,7 +76,11 @@ function compute() {
             break;
         case '/':
             if (current === 0) {
+                // Division by zero – enter error state
+                errorState = true;
                 display.textContent = 'Error';
+                updateDisplay();
+                // Auto‑clear after a short delay (optional)
                 setTimeout(clearAll, 1500);
                 return;
             }
@@ -86,6 +101,7 @@ function compute() {
 }
 
 function applyPercentage() {
+    if (errorState) return;
     if (currentInput === '') return;
     const value = parseFloat(currentInput) / 100;
     currentInput = value.toString();
@@ -93,6 +109,7 @@ function applyPercentage() {
 }
 
 function applyScientific(action) {
+    if (errorState) return;
     if (currentInput === '') return;
     const val = parseFloat(currentInput);
     let result;
@@ -151,6 +168,7 @@ function restoreFromHistory(entry) {
     currentInput = expr;
     previousValue = null;
     operator = null;
+    errorState = false; // clear any previous error
     updateDisplay();
 }
 
